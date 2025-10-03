@@ -1,0 +1,79 @@
+# CloudSITLSIM Configuration File
+
+# Application settings
+app:
+  name: "CloudSITLSIM"
+  version: "1.0.0"
+  debug: false
+  host: "0.0.0.0"
+  port: 5000
+  secret_key: "your-secret-key-change-this"
+
+# PX4 settings
+px4:
+  path: "sitl_engines/px4/PX4-Autopilot"
+  build_path: "sitl_engines/px4/PX4-Autopilot/build/px4_sitl_default"
+  gazebo_world: "default"
+  max_instances: 10
+
+# MAVLink settings
+mavlink:
+  port_range:
+    start: 14550
+    end: 14600
+  router_timeout: 5760
+  external_interface: "0.0.0.0"
+
+# Logging configuration
+logging:
+  level: "INFO"
+  file: "logs/cloudsitlsim.log"
+  max_size: "10MB"
+  backup_count: 5
+
+# Database settings
+database:
+  url: "sqlite:///instance/cloudsitlsim.db"
+  echo: false
+
+# Security settings
+security:
+  enable_auth: false
+  admin_users: []
+  session_timeout: 3600
+
+# Resource limits
+resources:
+  max_cpu_percent: 80
+  max_memory_mb: 2048
+  cleanup_interval: 300
+
+# Aircraft configurations
+aircraft:
+  default_types:
+    - name: "x500"
+      description: "X500 Quadcopter"
+      gazebo_model: "x500"
+      params_file: "x500_params.parm"
+    
+    - name: "solo"
+      description: "3DR Solo Quadcopter"
+      gazebo_model: "solo"
+      params_file: "solo_params.parm"
+    
+    - name: "iris"
+      description: "Iris Quadcopter"
+      gazebo_model: "iris"
+      params_file: "iris_params.parm"
+    
+    - name: "typhoon_h480"
+      description: "Typhoon H480 Hexacopter"
+      gazebo_model: "typhoon_h480"
+      params_file: "typhoon_h480_params.parm"
+
+# Web interface settings
+web:
+  title: "CloudSITLSIM"
+  refresh_interval: 5000
+  enable_telemetry: true
+  max_telemetry_points: 1000

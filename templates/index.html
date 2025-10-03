@@ -1,0 +1,330 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - CloudSITLSIM{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1>CloudSITLSIM Dashboard</h1>
+        <p class="lead">Cloud-based SITL Simulation Platform</p>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">System Status</h5>
+            </div>
+            <div class="card-body">
+                <div id="system-status-content">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading system status...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-primary" onclick="showStartInstanceModal()">
+                        Start New Instance
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="loadInstances()">
+                        View All Instances
+                    </button>
+                    <button class="btn btn-outline-info" onclick="loadAircraft()">
+                        Browse Aircraft Types
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Running Instances</h5>
+            </div>
+            <div class="card-body">
+                <div id="instances-content">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading instances...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Start Instance Modal -->
+<div class="modal fade" id="startInstanceModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Start New SITL Instance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="startInstanceForm">
+                    <div class="mb-3">
+                        <label for="aircraftType" class="form-label">Aircraft Type</label>
+                        <select class="form-select" id="aircraftType" required>
+                            <option value="">Select aircraft type...</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="engineType" class="form-label">Engine Type</label>
+                        <select class="form-select" id="engineType">
+                            <option value="px4">PX4</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="instanceId" class="form-label">Instance ID (Optional)</label>
+                        <input type="text" class="form-control" id="instanceId" 
+                               placeholder="Leave empty for auto-generated">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="startInstance()">Start Instance</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Load data when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    loadSystemStatus();
+    loadInstances();
+    loadAircraftTypes();
+    
+    // Refresh data every 5 seconds
+    setInterval(function() {
+        loadSystemStatus();
+        loadInstances();
+    }, 5000);
+});
+
+function loadSystemStatus() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            const statusElement = document.getElementById('system-status');
+            if (data.system === 'online') {
+                statusElement.innerHTML = '<span class="badge bg-success">Online</span>';
+            } else {
+                statusElement.innerHTML = '<span class="badge bg-danger">Offline</span>';
+            }
+            
+            updateSystemStatusContent(data);
+        })
+        .catch(error => {
+            console.error('Error loading system status:', error);
+            document.getElementById('system-status').innerHTML = 
+                '<span class="badge bg-danger">Error</span>';
+        });
+}
+
+function updateSystemStatusContent(data) {
+    const content = document.getElementById('system-status-content');
+    let html = '<div class="row">';
+    
+    // Engine status
+    for (const [engine, status] of Object.entries(data.engines)) {
+        const badgeClass = status.available ? 'bg-success' : 'bg-danger';
+        html += `
+            <div class="col-md-6 mb-2">
+                <strong>${engine.toUpperCase()}:</strong>
+                <span class="badge ${badgeClass} ms-2">
+                    ${status.available ? 'Available' : 'Unavailable'}
+                </span>
+                <small class="text-muted d-block">
+                    ${status.instance_count} instances
+                </small>
+            </div>
+        `;
+    }
+    
+    html += '</div>';
+    content.innerHTML = html;
+}
+
+function loadInstances() {
+    fetch('/api/instances')
+        .then(response => response.json())
+        .then(instances => {
+            updateInstancesContent(instances);
+        })
+        .catch(error => {
+            console.error('Error loading instances:', error);
+            document.getElementById('instances-content').innerHTML = 
+                '<div class="alert alert-danger">Error loading instances</div>';
+        });
+}
+
+function updateInstancesContent(instances) {
+    const content = document.getElementById('instances-content');
+    
+    if (instances.length === 0) {
+        content.innerHTML = '<p class="text-muted">No instances running</p>';
+        return;
+    }
+    
+    let html = '<div class="table-responsive"><table class="table table-striped">';
+    html += `
+        <thead>
+            <tr>
+                <th>Instance ID</th>
+                <th>Aircraft Type</th>
+                <th>Engine</th>
+                <th>Port</th>
+                <th>Status</th>
+                <th>Uptime</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+    `;
+    
+    instances.forEach(instance => {
+        const uptime = Math.floor(instance.uptime / 60); // minutes
+        const statusBadge = instance.status === 'running' ? 'bg-success' : 'bg-warning';
+        
+        html += `
+            <tr>
+                <td><code>${instance.instance_id}</code></td>
+                <td>${instance.aircraft_type}</td>
+                <td>${instance.engine_type || 'px4'}</td>
+                <td>${instance.port}</td>
+                <td><span class="badge ${statusBadge}">${instance.status}</span></td>
+                <td>${uptime}m</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" 
+                            onclick="stopInstance('${instance.instance_id}')">
+                        Stop
+                    </button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += '</tbody></table></div>';
+    content.innerHTML = html;
+}
+
+function loadAircraftTypes() {
+    fetch('/api/aircraft')
+        .then(response => response.json())
+        .then(data => {
+            updateAircraftTypesSelect(data);
+        })
+        .catch(error => {
+            console.error('Error loading aircraft types:', error);
+        });
+}
+
+function updateAircraftTypesSelect(data) {
+    const select = document.getElementById('aircraftType');
+    select.innerHTML = '<option value="">Select aircraft type...</option>';
+    
+    for (const [engine, aircraft] of Object.entries(data)) {
+        aircraft.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.name;
+            option.textContent = `${type.name} - ${type.description}`;
+            select.appendChild(option);
+        });
+    }
+}
+
+function showStartInstanceModal() {
+    const modal = new bootstrap.Modal(document.getElementById('startInstanceModal'));
+    modal.show();
+}
+
+function startInstance() {
+    const aircraftType = document.getElementById('aircraftType').value;
+    const engineType = document.getElementById('engineType').value;
+    const instanceId = document.getElementById('instanceId').value;
+    
+    if (!aircraftType) {
+        alert('Please select an aircraft type');
+        return;
+    }
+    
+    const data = {
+        engine: engineType,
+        aircraft_type: aircraftType
+    };
+    
+    if (instanceId) {
+        data.instance_id = instanceId;
+    }
+    
+    fetch('/api/instances', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert(`Successfully started instance: ${result.instance_id}`);
+            bootstrap.Modal.getInstance(document.getElementById('startInstanceModal')).hide();
+            loadInstances();
+        } else {
+            alert(`Error: ${result.error || 'Failed to start instance'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error starting instance:', error);
+        alert('Error starting instance');
+    });
+}
+
+function stopInstance(instanceId) {
+    if (!confirm(`Are you sure you want to stop instance ${instanceId}?`)) {
+        return;
+    }
+    
+    fetch(`/api/instances/${instanceId}`, {
+        method: 'DELETE'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert(`Successfully stopped instance: ${instanceId}`);
+            loadInstances();
+        } else {
+            alert(`Error: ${result.error || 'Failed to stop instance'}`);
+        }
+    })
+    .catch(error => {
+        console.error('Error stopping instance:', error);
+        alert('Error stopping instance');
+    });
+}
+</script>
+{% endblock %}
