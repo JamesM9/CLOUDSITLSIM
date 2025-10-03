@@ -28,6 +28,12 @@ make px4_sitl gz_x500 &
 # Wait a moment for PX4 to start
 sleep 3
 
+# Check if MAVLink router is installed
+if ! command -v mavlink-routerd &> /dev/null; then
+    echo "Error: mavlink-routerd not found. Please run ./setup.sh first"
+    exit 1
+fi
+
 # Start MAVLink router
 echo "Starting MAVLink router on port $PORT..."
 sudo mavlink-routerd 0.0.0.0:$PORT -t 5760 -v &

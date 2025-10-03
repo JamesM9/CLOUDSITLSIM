@@ -51,8 +51,29 @@ sudo apt-get install -y \
     libgstreamer-plugins-good1.0-dev \
     gstreamer1.0-libav
 
-# Install MAVLink router
-sudo apt-get install -y mavlink-router
+# Install MAVLink router dependencies
+sudo apt-get install -y git build-essential meson ninja-build pkg-config libsystemd-dev
+
+# Install MAVLink router from source
+echo "Installing MAVLink router from source..."
+cd /tmp
+git clone https://github.com/mavlink/mavlink-router.git
+cd mavlink-router
+meson setup build .
+ninja -C build
+sudo ninja -C build install
+
+# Verify installation
+mavlink-routerd -h > /dev/null 2>&1
+if [ $? -eq 0 ]; then
+    echo "MAVLink router installed successfully"
+else
+    echo "Warning: MAVLink router installation may have failed"
+fi
+
+# Clean up
+cd ~
+rm -rf /tmp/mavlink-router
 
 # Install additional tools for PX4
 sudo apt-get install -y \

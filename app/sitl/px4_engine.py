@@ -196,8 +196,15 @@ class PX4Engine:
     
     def _start_mavlink_router(self, port: int) -> subprocess.Popen:
         """Start MAVLink router for external connections"""
+        # Check if mavlink-routerd is available
+        import shutil
+        mavlink_router_path = shutil.which('mavlink-routerd')
+        
+        if not mavlink_router_path:
+            raise RuntimeError("mavlink-routerd not found. Please ensure MAVLink router is installed.")
+        
         cmd = [
-            'mavlink-routerd',
+            mavlink_router_path,
             f'0.0.0.0:{port}',
             '-t', '5760',
             '-v'
