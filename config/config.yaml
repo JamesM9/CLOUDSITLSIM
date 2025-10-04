@@ -51,25 +51,47 @@ resources:
 # Aircraft configurations
 aircraft:
   default_types:
+    - name: "iris"
+      description: "Iris Quadcopter"
+      gazebo_model: "iris"
+      px4_model: "iris"
+      autostart_id: "4001"
+    
     - name: "x500"
       description: "X500 Quadcopter"
       gazebo_model: "x500"
-      params_file: "x500_params.parm"
+      px4_model: "x500"
+      autostart_id: "4001"
     
     - name: "solo"
       description: "3DR Solo Quadcopter"
       gazebo_model: "solo"
-      params_file: "solo_params.parm"
-    
-    - name: "iris"
-      description: "Iris Quadcopter"
-      gazebo_model: "iris"
-      params_file: "iris_params.parm"
+      px4_model: "solo"
+      autostart_id: "4001"
     
     - name: "typhoon_h480"
       description: "Typhoon H480 Hexacopter"
       gazebo_model: "typhoon_h480"
-      params_file: "typhoon_h480_params.parm"
+      px4_model: "typhoon_h480"
+      autostart_id: "4001"
+    
+    - name: "plane"
+      description: "Generic Fixed-wing Aircraft"
+      gazebo_model: "plane"
+      px4_model: "plane"
+      autostart_id: "2100"
+    
+    - name: "rover"
+      description: "Generic Ground Rover"
+      gazebo_model: "rover"
+      px4_model: "rover"
+      autostart_id: "50000"
+    
+    - name: "boat"
+      description: "Generic Boat"
+      gazebo_model: "boat"
+      px4_model: "boat"
+      autostart_id: "50001"
 
 # Web interface settings
 web:

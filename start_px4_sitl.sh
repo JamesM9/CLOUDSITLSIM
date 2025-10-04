@@ -21,9 +21,9 @@ cd sitl_engines/px4/PX4-Autopilot
 export HEADLESS=1
 export PX4_SIM_HOSTNAME=localhost
 
-# Start PX4 SITL
-echo "Starting PX4 SITL..."
-make px4_sitl gz_x500 &
+# Start PX4 SITL with the specified aircraft type
+echo "Starting PX4 SITL with $AIRCRAFT_TYPE..."
+make px4_sitl gz_${AIRCRAFT_TYPE} &
 
 # Wait a moment for PX4 to start
 sleep 3

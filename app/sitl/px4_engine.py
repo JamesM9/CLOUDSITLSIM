@@ -68,18 +68,35 @@ class PX4Engine:
     
     def get_available_aircraft(self) -> List[Dict[str, str]]:
         """Get list of available aircraft types"""
-        aircraft_dir = self.px4_path / "ROMFS" / "px4fmu_common" / "init.d-posix"
+        # Load aircraft types from configuration
+        import yaml
+        config_path = Path("config/config.yaml")
         
         aircraft_types = []
-        if aircraft_dir.exists():
-            for init_file in aircraft_dir.glob("*"):
-                if init_file.is_file() and not init_file.name.startswith('.'):
-                    aircraft_name = init_file.stem
+        
+        if config_path.exists():
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+                aircraft_config = config.get('aircraft', {}).get('default_types', [])
+                
+                for aircraft in aircraft_config:
                     aircraft_types.append({
-                        'name': aircraft_name,
-                        'description': f"PX4 {aircraft_name} aircraft",
-                        'init_file': str(init_file)
+                        'name': aircraft['name'],
+                        'description': aircraft['description'],
+                        'gazebo_model': aircraft.get('gazebo_model', aircraft['name']),
+                        'px4_model': aircraft.get('px4_model', aircraft['name']),
+                        'autostart_id': aircraft.get('autostart_id', '4001')
                     })
+        
+        # If no config, provide default aircraft types
+        if not aircraft_types:
+            aircraft_types = [
+                {'name': 'iris', 'description': 'Iris Quadcopter', 'gazebo_model': 'iris', 'px4_model': 'iris', 'autostart_id': '4001'},
+                {'name': 'x500', 'description': 'X500 Quadcopter', 'gazebo_model': 'x500', 'px4_model': 'x500', 'autostart_id': '4001'},
+                {'name': 'solo', 'description': '3DR Solo Quadcopter', 'gazebo_model': 'solo', 'px4_model': 'solo', 'autostart_id': '4001'},
+                {'name': 'plane', 'description': 'Generic Fixed-wing Aircraft', 'gazebo_model': 'plane', 'px4_model': 'plane', 'autostart_id': '2100'},
+                {'name': 'rover', 'description': 'Generic Ground Rover', 'gazebo_model': 'rover', 'px4_model': 'rover', 'autostart_id': '50000'},
+            ]
         
         return aircraft_types
     
@@ -156,24 +173,35 @@ class PX4Engine:
     
     def _start_px4_process(self, aircraft_type: str, port: int) -> subprocess.Popen:
         """Start PX4 SITL process"""
-        px4_binary = self.px4_path / "build" / "px4_sitl_default" / "bin" / "px4"
+        # Get aircraft configuration
+        aircraft_types = self.get_available_aircraft()
+        aircraft_config = None
+        
+        for aircraft in aircraft_types:
+            if aircraft['name'] == aircraft_type:
+                aircraft_config = aircraft
+                break
+        
+        if not aircraft_config:
+            raise ValueError(f"Unknown aircraft type: {aircraft_type}")
         
         # Set environment variables
         env = os.environ.copy()
         env['HEADLESS'] = '1'
         env['PX4_SIM_HOSTNAME'] = 'localhost'
         
-        # Build command
+        # Use make command to start PX4 SITL with specific model
+        gazebo_model = aircraft_config.get('gazebo_model', aircraft_type)
+        
+        # Build command using make (this is the correct way for PX4 SITL)
         cmd = [
-            str(px4_binary),
-            self.px4_path / "build" / "px4_sitl_default" / "etc",
-            '-s',
-            f'{self.px4_path}/ROMFS/px4fmu_common/init.d-posix/{aircraft_type}',
-            '-t',
-            'uart1:udp://127.0.0.1:{port}'.format(port=port + 10)
+            'make',
+            'px4_sitl',
+            f'gz_{gazebo_model}'
         ]
         
-        logger.info(f"Starting PX4 with command: {' '.join(str(c) for c in cmd)}")
+        logger.info(f"Starting PX4 SITL with aircraft: {aircraft_type} (Gazebo model: {gazebo_model})")
+        logger.info(f"Command: {' '.join(cmd)}")
         
         # Start process
         process = subprocess.Popen(
@@ -186,7 +214,7 @@ class PX4Engine:
         )
         
         # Give it a moment to start
-        time.sleep(2)
+        time.sleep(3)
         
         if process.poll() is not None:
             stdout, stderr = process.communicate()
