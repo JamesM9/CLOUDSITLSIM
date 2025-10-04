@@ -29,9 +29,10 @@ export GAZEBO_MASTER_URI=http://127.0.0.1:11345
 export GAZEBO_MODEL_PATH=$PWD/Tools/sitl_gazebo/models
 export GAZEBO_RESOURCE_PATH=$PWD/Tools/sitl_gazebo
 
-# Start PX4 SITL with the specified aircraft type in headless mode
-echo "Starting PX4 SITL with $AIRCRAFT_TYPE in headless mode..."
-make px4_sitl gazebo_${AIRCRAFT_TYPE} &
+# Start PX4 SITL with Gazebo in headless mode
+echo "Starting PX4 SITL with Gazebo in headless mode..."
+echo "Note: Aircraft type $AIRCRAFT_TYPE will be configured via PX4 parameters"
+make px4_sitl gazebo &
 
 # Wait a moment for PX4 to start
 sleep 3

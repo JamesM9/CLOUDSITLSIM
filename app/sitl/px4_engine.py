@@ -194,14 +194,15 @@ class PX4Engine:
         env['GAZEBO_IP'] = '127.0.0.1'
         env['GAZEBO_MASTER_URI'] = 'http://127.0.0.1:11345'
         
-        # Use make command to start PX4 SITL with specific Gazebo target
-        gazebo_target = aircraft_config.get('gazebo_target', f'gz_{aircraft_type}')
+        # Use the standard PX4 SITL command with Gazebo
+        # The correct format is: make px4_sitl gazebo HEADLESS=1
+        cmd = ['make', 'px4_sitl', 'gazebo']
         
-        # Build command using the exact Gazebo target from configuration
-        cmd = ['make', 'px4_sitl', gazebo_target]
+        # Set the autostart parameter to configure the aircraft type
+        autostart_id = aircraft_config.get('autostart_id', '4001')
+        env['PX4_AUTOSTART'] = autostart_id
         
         logger.info(f"Starting PX4 SITL with aircraft: {aircraft_type}")
-        logger.info(f"Gazebo target: {gazebo_target}")
         logger.info(f"Command: {' '.join(cmd)}")
         
         # Start process

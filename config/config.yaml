@@ -54,80 +54,50 @@ aircraft:
     # Quadrotor Aircraft
     - name: "x500"
       description: "X500 Quadrotor"
-      gazebo_target: "gazebo_x500"
+      gazebo_target: "gazebo"
       autostart_id: "4001"
-    
-    - name: "x500_depth"
-      description: "X500 Quadrotor with Depth Camera (Front-facing)"
-      gazebo_target: "gazebo_x500_depth"
-      autostart_id: "4002"
-    
-    - name: "x500_vision"
-      description: "X500 Quadrotor with Vision Odometry"
-      gazebo_target: "gazebo_x500_vision"
-      autostart_id: "4005"
-    
-    - name: "x500_lidar_down"
-      description: "X500 Quadrotor with 1D LIDAR (Down-facing)"
-      gazebo_target: "gazebo_x500_lidar_down"
-      autostart_id: "4016"
-    
-    - name: "x500_lidar_2d"
-      description: "X500 Quadrotor with 2D LIDAR"
-      gazebo_target: "gazebo_x500_lidar_2d"
-      autostart_id: "4013"
-    
-    - name: "x500_lidar_front"
-      description: "X500 Quadrotor with 1D LIDAR (Front-facing)"
-      gazebo_target: "gazebo_x500_lidar_front"
-      autostart_id: "4017"
-    
-    - name: "x500_gimbal"
-      description: "X500 Quadrotor with Gimbal (Front-facing)"
-      gazebo_target: "gazebo_x500_gimbal"
-      autostart_id: "4019"
     
     # VTOL Aircraft
     - name: "standard_vtol"
       description: "Standard VTOL"
-      gazebo_target: "gazebo_standard_vtol"
+      gazebo_target: "gazebo"
       autostart_id: "4004"
     
     - name: "quadtailsitter"
       description: "Quad Tailsitter VTOL"
-      gazebo_target: "gazebo_quadtailsitter"
+      gazebo_target: "gazebo"
       autostart_id: "4018"
     
     - name: "tiltrotor"
       description: "Tiltrotor VTOL"
-      gazebo_target: "gazebo_tiltrotor"
+      gazebo_target: "gazebo"
       autostart_id: "4020"
     
     # Fixed-wing Aircraft
     - name: "rc_cessna"
       description: "RC Cessna Plane"
-      gazebo_target: "gazebo_rc_cessna"
+      gazebo_target: "gazebo"
       autostart_id: "4003"
     
     - name: "advanced_plane"
       description: "Advanced Plane"
-      gazebo_target: "gazebo_advanced_plane"
+      gazebo_target: "gazebo"
       autostart_id: "4008"
     
     # Ground Vehicles
     - name: "rover_differential"
       description: "Differential Rover"
-      gazebo_target: "gazebo_rover_differential"
+      gazebo_target: "gazebo"
       autostart_id: "50000"
     
     - name: "rover_ackermann"
       description: "Ackermann Rover"
-      gazebo_target: "gazebo_rover_ackermann"
+      gazebo_target: "gazebo"
       autostart_id: "51000"
     
     - name: "rover_mecanum"
       description: "Mecanum Rover"
-      gazebo_target: "gazebo_rover_mecanum"
+      gazebo_target: "gazebo"
       autostart_id: "52000"
 
 # Web interface settings
