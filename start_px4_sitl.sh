@@ -31,7 +31,7 @@ export GAZEBO_RESOURCE_PATH=$PWD/Tools/sitl_gazebo
 
 # Start PX4 SITL with the specified aircraft type in headless mode
 echo "Starting PX4 SITL with $AIRCRAFT_TYPE in headless mode..."
-make px4_sitl gazebo_${AIRCRAFT_TYPE} &
+make px4_sitl gz_${AIRCRAFT_TYPE} &
 
 # Wait a moment for PX4 to start
 sleep 3

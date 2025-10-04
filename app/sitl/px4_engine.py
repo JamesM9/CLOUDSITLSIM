@@ -83,19 +83,17 @@ class PX4Engine:
                     aircraft_types.append({
                         'name': aircraft['name'],
                         'description': aircraft['description'],
-                        'gazebo_model': aircraft.get('gazebo_model', aircraft['name']),
-                        'px4_model': aircraft.get('px4_model', aircraft['name']),
+                        'gazebo_target': aircraft.get('gazebo_target', f"gz_{aircraft['name']}"),
                         'autostart_id': aircraft.get('autostart_id', '4001')
                     })
         
         # If no config, provide default aircraft types
         if not aircraft_types:
             aircraft_types = [
-                {'name': 'iris', 'description': 'Iris Quadcopter', 'gazebo_model': 'iris', 'px4_model': 'iris', 'autostart_id': '4001'},
-                {'name': 'x500', 'description': 'X500 Quadcopter', 'gazebo_model': 'x500', 'px4_model': 'x500', 'autostart_id': '4001'},
-                {'name': 'solo', 'description': '3DR Solo Quadcopter', 'gazebo_model': 'solo', 'px4_model': 'solo', 'autostart_id': '4001'},
-                {'name': 'plane', 'description': 'Generic Fixed-wing Aircraft', 'gazebo_model': 'plane', 'px4_model': 'plane', 'autostart_id': '2100'},
-                {'name': 'rover', 'description': 'Generic Ground Rover', 'gazebo_model': 'rover', 'px4_model': 'rover', 'autostart_id': '50000'},
+                {'name': 'x500', 'description': 'X500 Quadrotor', 'gazebo_target': 'gz_x500', 'autostart_id': '4001'},
+                {'name': 'standard_vtol', 'description': 'Standard VTOL', 'gazebo_target': 'gz_standard_vtol', 'autostart_id': '4004'},
+                {'name': 'rc_cessna', 'description': 'RC Cessna Plane', 'gazebo_target': 'gz_rc_cessna', 'autostart_id': '4003'},
+                {'name': 'rover_differential', 'description': 'Differential Rover', 'gazebo_target': 'gz_rover_differential', 'autostart_id': '50000'},
             ]
         
         return aircraft_types
@@ -196,58 +194,36 @@ class PX4Engine:
         env['GAZEBO_IP'] = '127.0.0.1'
         env['GAZEBO_MASTER_URI'] = 'http://127.0.0.1:11345'
         
-        # Use make command to start PX4 SITL with specific model
-        gazebo_model = aircraft_config.get('gazebo_model', aircraft_type)
+        # Use make command to start PX4 SITL with specific Gazebo target
+        gazebo_target = aircraft_config.get('gazebo_target', f'gz_{aircraft_type}')
         
-        # Try different target formats that PX4 might support
-        target_formats = [
-            f'gazebo_{gazebo_model}',
-            f'gz_{gazebo_model}',
-            gazebo_model,
-            'default'  # Fallback to default if specific model not found
-        ]
+        # Build command using the exact Gazebo target from configuration
+        cmd = ['make', 'px4_sitl', gazebo_target]
         
-        process = None
-        last_error = None
+        logger.info(f"Starting PX4 SITL with aircraft: {aircraft_type}")
+        logger.info(f"Gazebo target: {gazebo_target}")
+        logger.info(f"Command: {' '.join(cmd)}")
         
-        for target in target_formats:
-            cmd = ['make', 'px4_sitl', target]
-            
-            logger.info(f"Trying PX4 SITL target: {target} for aircraft: {aircraft_type}")
-            logger.info(f"Command: {' '.join(cmd)}")
-            
-            try:
-                # Start process
-                process = subprocess.Popen(
-                    cmd,
-                    cwd=str(self.px4_path),
-                    env=env,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.PIPE,
-                    preexec_fn=os.setsid
-                )
-                
-                # Give it a moment to start
-                time.sleep(3)
-                
-                if process.poll() is not None:
-                    stdout, stderr = process.communicate()
-                    error_msg = stderr.decode()
-                    logger.warning(f"Target {target} failed: {error_msg}")
-                    last_error = error_msg
-                    continue
-                else:
-                    logger.info(f"Successfully started PX4 SITL with target: {target}")
-                    break
-                    
-            except Exception as e:
-                logger.warning(f"Exception with target {target}: {e}")
-                last_error = str(e)
-                continue
+        # Start process
+        process = subprocess.Popen(
+            cmd,
+            cwd=str(self.px4_path),
+            env=env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            preexec_fn=os.setsid
+        )
         
-        if process is None or process.poll() is not None:
-            raise RuntimeError(f"PX4 process failed to start with any target. Last error: {last_error}")
+        # Give it a moment to start
+        time.sleep(3)
         
+        if process.poll() is not None:
+            stdout, stderr = process.communicate()
+            error_msg = stderr.decode()
+            logger.error(f"PX4 SITL failed to start: {error_msg}")
+            raise RuntimeError(f"PX4 process failed to start: {error_msg}")
+        
+        logger.info(f"Successfully started PX4 SITL with target: {gazebo_target}")
         return process
     
     def _start_mavlink_router(self, port: int) -> subprocess.Popen:
