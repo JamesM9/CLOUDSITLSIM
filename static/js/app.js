@@ -308,25 +308,100 @@ async function stopInstance(instanceId) {
 }
 
 // UI helper functions
-function showConnectionInfo(instanceId, port) {
+function showQGCConnectionInfo(instanceId, port) {
     const host = window.location.hostname;
     
-    const connectionInfo = `
-Connection Information:
-Host: ${host}
-Port: ${port}
-Protocol: UDP
-
-For QGroundControl:
-1. Open QGroundControl
-2. Go to Application Settings > Comm Links
-3. Add new connection
-4. Select "UDP"
-5. Set Host to: ${host}
-6. Set Port to: ${port}
+    // Create modal HTML
+    const modalHtml = `
+        <div class="modal fade" id="connectionModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">QGroundControl Connection Info</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="connection-details">
+                            <h6>Connection Parameters</h6>
+                            <div class="connection-param">
+                                <span class="param-name">Connection Type:</span>
+                                <span class="param-value">UDP</span>
+                            </div>
+                            <div class="connection-param">
+                                <span class="param-name">Host/IP Address:</span>
+                                <span class="param-value">${host}</span>
+                                <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('${host}')">Copy</button>
+                            </div>
+                            <div class="connection-param">
+                                <span class="param-name">Port:</span>
+                                <span class="param-value">${port}</span>
+                                <button class="btn btn-sm btn-outline-light ms-2" onclick="copyToClipboard('${port}')">Copy</button>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6>Step-by-Step Instructions</h6>
+                            <ol>
+                                <li>Open <strong>QGroundControl</strong></li>
+                                <li>Go to <strong>Application Settings</strong> (gear icon)</li>
+                                <li>Select <strong>"Comm Links"</strong> tab</li>
+                                <li>Click <strong>"Add"</strong> to create new connection</li>
+                                <li>Select <strong>"UDP"</strong> as connection type</li>
+                                <li>Set <strong>Host</strong> to: <code>${host}</code></li>
+                                <li>Set <strong>Port</strong> to: <code>${port}</code></li>
+                                <li>Click <strong>"OK"</strong> to save</li>
+                                <li>Select the new connection and click <strong>"Connect"</strong></li>
+                            </ol>
+                        </div>
+                        
+                        <div class="alert alert-info mt-3">
+                            <strong>Note:</strong> Make sure your firewall allows connections on port ${port}.
+                            The connection will be established automatically once configured.
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" onclick="copyAllConnectionInfo('${host}', '${port}')">Copy All Info</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
     
-    alert(connectionInfo);
+    // Remove existing modal if any
+    const existingModal = document.getElementById('connectionModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to body
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('connectionModal'));
+    modal.show();
+    
+    // Remove modal from DOM when hidden
+    document.getElementById('connectionModal').addEventListener('hidden.bs.modal', function () {
+        this.remove();
+    });
+}
+
+function copyAllConnectionInfo(host, port) {
+    const connectionText = `QGroundControl Connection Info:
+Connection Type: UDP
+Host/IP Address: ${host}
+Port: ${port}
+
+Steps:
+1. Open QGroundControl
+2. Go to Application Settings > Comm Links
+3. Add new UDP connection
+4. Set Host: ${host}
+5. Set Port: ${port}
+6. Connect`;
+    
+    copyToClipboard(connectionText);
 }
 
 function copyToClipboard(text) {

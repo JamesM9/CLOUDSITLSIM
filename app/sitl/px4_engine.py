@@ -214,16 +214,23 @@ class PX4Engine:
             preexec_fn=os.setsid
         )
         
-        # Give it a moment to start
-        time.sleep(3)
-        
-        if process.poll() is not None:
-            stdout, stderr = process.communicate()
-            error_msg = stderr.decode()
-            logger.error(f"PX4 SITL failed to start: {error_msg}")
-            raise RuntimeError(f"PX4 process failed to start: {error_msg}")
+        # Give it more time to start and check multiple times
+        logger.info("Waiting for PX4 SITL to start...")
+        for i in range(10):  # Check for 10 seconds
+            time.sleep(1)
+            if process.poll() is not None:
+                stdout, stderr = process.communicate()
+                error_msg = stderr.decode()
+                logger.error(f"PX4 SITL failed to start after {i+1} seconds: {error_msg}")
+                logger.error(f"Command was: {' '.join(cmd)}")
+                logger.error(f"Working directory: {self.px4_path}")
+                raise RuntimeError(f"PX4 process failed to start: {error_msg}")
+            
+            # Check if process is still starting up
+            logger.info(f"PX4 SITL starting... ({i+1}/10 seconds)")
         
         logger.info(f"Successfully started PX4 SITL with target: {gazebo_target}")
+        logger.info(f"PX4 process PID: {process.pid}")
         return process
     
     def _start_mavlink_router(self, port: int) -> subprocess.Popen:
@@ -320,6 +327,8 @@ class PX4Engine:
     
     def _monitor_instance(self, instance_id: str):
         """Monitor a PX4 instance for health"""
+        logger.info(f"Starting monitoring thread for instance {instance_id}")
+        
         while instance_id in self.instances:
             instance = self.instances[instance_id]
             
@@ -328,16 +337,33 @@ class PX4Engine:
             mavlink_running = (instance.mavlink_router_process and 
                              instance.mavlink_router_process.poll() is None)
             
+            # Log process status for debugging
+            logger.debug(f"Instance {instance_id} - PX4 running: {px4_running}, MAVLink running: {mavlink_running}")
+            
+            if not px4_running:
+                logger.error(f"PX4 process died for instance {instance_id}")
+                if instance.process:
+                    logger.error(f"PX4 process exit code: {instance.process.returncode}")
+            elif not mavlink_running:
+                logger.error(f"MAVLink router process died for instance {instance_id}")
+                if instance.mavlink_router_process:
+                    logger.error(f"MAVLink router process exit code: {instance.mavlink_router_process.returncode}")
+            
             if not px4_running or not mavlink_running:
                 logger.warning(f"Instance {instance_id} processes died, cleaning up")
                 instance.status = "failed"
                 self.stop_instance(instance_id)
                 break
             
-            # Update heartbeat
+            # Update heartbeat and status
             instance.last_heartbeat = time.time()
+            if instance.status == "starting":
+                instance.status = "running"
+                logger.info(f"Instance {instance_id} is now running")
             
             time.sleep(5)  # Check every 5 seconds
+        
+        logger.info(f"Monitoring thread for instance {instance_id} ended")
     
     def get_instance_status(self, instance_id: str) -> Dict:
         """Get status of a specific instance"""
@@ -362,8 +388,50 @@ class PX4Engine:
     
     def list_instances(self) -> List[Dict]:
         """List all running instances"""
+        # Clean up any instances that might have died
+        self._cleanup_dead_instances()
+        
         return [self.get_instance_status(instance_id) 
                 for instance_id in self.instances.keys()]
+    
+    def _cleanup_dead_instances(self):
+        """Clean up instances that have died"""
+        dead_instances = []
+        
+        for instance_id, instance in self.instances.items():
+            px4_running = instance.process and instance.process.poll() is None
+            mavlink_running = (instance.mavlink_router_process and 
+                             instance.mavlink_router_process.poll() is None)
+            
+            if not px4_running or not mavlink_running:
+                logger.info(f"Cleaning up dead instance: {instance_id}")
+                dead_instances.append(instance_id)
+        
+        for instance_id in dead_instances:
+            try:
+                self.stop_instance(instance_id)
+            except Exception as e:
+                logger.error(f"Error cleaning up instance {instance_id}: {e}")
+    
+    def get_running_px4_processes(self) -> List[Dict]:
+        """Get list of PX4 processes running on the system"""
+        running_processes = []
+        
+        try:
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    if 'px4' in proc.info['name'].lower() or any('px4' in arg.lower() for arg in proc.info['cmdline']):
+                        running_processes.append({
+                            'pid': proc.info['pid'],
+                            'name': proc.info['name'],
+                            'cmdline': ' '.join(proc.info['cmdline'])
+                        })
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+        except Exception as e:
+            logger.error(f"Error getting running processes: {e}")
+        
+        return running_processes
     
     def stop_all_instances(self):
         """Stop all running instances"""

@@ -180,6 +180,44 @@ def create_app():
             logger.error(f"Error stopping instance: {e}")
             return jsonify({"error": str(e)}), 500
     
+    @app.route('/api/debug/processes')
+    def api_debug_processes():
+        """Debug endpoint to check running processes"""
+        if not app.sitl_manager:
+            return jsonify({"error": "SITL Manager not initialized"}), 500
+        
+        try:
+            debug_info = {
+                "managed_instances": len(app.sitl_manager.instances),
+                "instance_details": {},
+                "running_px4_processes": []
+            }
+            
+            # Get managed instances
+            for engine_name, engine in app.sitl_manager.engines.items():
+                if hasattr(engine, 'instances'):
+                    debug_info["instance_details"][engine_name] = {}
+                    for instance_id, instance in engine.instances.items():
+                        debug_info["instance_details"][engine_name][instance_id] = {
+                            "status": instance.status,
+                            "port": instance.port,
+                            "px4_running": instance.process and instance.process.poll() is None,
+                            "mavlink_running": (instance.mavlink_router_process and 
+                                              instance.mavlink_router_process.poll() is None),
+                            "created_at": instance.created_at,
+                            "last_heartbeat": instance.last_heartbeat
+                        }
+                
+                # Get running PX4 processes
+                if hasattr(engine, 'get_running_px4_processes'):
+                    debug_info["running_px4_processes"] = engine.get_running_px4_processes()
+            
+            return jsonify(debug_info)
+            
+        except Exception as e:
+            logger.error(f"Error getting debug info: {e}")
+            return jsonify({"error": str(e)}), 500
+    
     @app.teardown_appcontext
     def cleanup(error):
         """Cleanup resources on app shutdown"""
