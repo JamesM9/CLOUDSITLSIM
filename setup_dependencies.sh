@@ -57,8 +57,14 @@ sudo apt-get install -y git build-essential meson ninja-build pkg-config libsyst
 # Install MAVLink router from source
 echo "Installing MAVLink router from source..."
 cd /tmp
-git clone https://github.com/mavlink/mavlink-router.git
+rm -rf mavlink-router  # Clean up any incomplete repo
+
+# Clone with submodules (this is the key fix!)
+git clone --recursive https://github.com/mavlink-router/mavlink-router.git
 cd mavlink-router
+
+# Build and install
+echo "Building MAVLink router..."
 meson setup build .
 ninja -C build
 sudo ninja -C build install
@@ -66,9 +72,10 @@ sudo ninja -C build install
 # Verify installation
 mavlink-routerd -h > /dev/null 2>&1
 if [ $? -eq 0 ]; then
-    echo "MAVLink router installed successfully"
+    echo "✅ MAVLink router installed successfully"
 else
-    echo "Warning: MAVLink router installation may have failed"
+    echo "❌ MAVLink router installation failed"
+    exit 1
 fi
 
 # Clean up

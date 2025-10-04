@@ -11,9 +11,12 @@ sudo apt update && sudo apt upgrade -y
 sudo apt install -y git build-essential meson ninja-build pkg-config libsystemd-dev
 
 # Clone and build mavlink-router
-echo "Cloning MAVLink router repository..."
+echo "Cloning MAVLink router repository with submodules..."
 cd /tmp
-git clone https://github.com/mavlink/mavlink-router.git
+rm -rf mavlink-router  # Clean up any incomplete repo
+
+# Clone with submodules (this is the key fix!)
+git clone --recursive https://github.com/mavlink-router/mavlink-router.git
 cd mavlink-router
 
 echo "Building MAVLink router..."
