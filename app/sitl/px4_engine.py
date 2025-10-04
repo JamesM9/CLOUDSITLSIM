@@ -90,10 +90,10 @@ class PX4Engine:
         # If no config, provide default aircraft types
         if not aircraft_types:
             aircraft_types = [
-                {'name': 'x500', 'description': 'X500 Quadrotor', 'gazebo_target': 'gz_x500', 'autostart_id': '4001'},
-                {'name': 'standard_vtol', 'description': 'Standard VTOL', 'gazebo_target': 'gz_standard_vtol', 'autostart_id': '4004'},
-                {'name': 'rc_cessna', 'description': 'RC Cessna Plane', 'gazebo_target': 'gz_rc_cessna', 'autostart_id': '4003'},
-                {'name': 'rover_differential', 'description': 'Differential Rover', 'gazebo_target': 'gz_rover_differential', 'autostart_id': '50000'},
+                {'name': 'x500', 'description': 'X500 Quadrotor', 'gazebo_target': 'gazebo_x500', 'autostart_id': '4001'},
+                {'name': 'standard_vtol', 'description': 'Standard VTOL', 'gazebo_target': 'gazebo_standard_vtol', 'autostart_id': '4004'},
+                {'name': 'rc_cessna', 'description': 'RC Cessna Plane', 'gazebo_target': 'gazebo_rc_cessna', 'autostart_id': '4003'},
+                {'name': 'rover_differential', 'description': 'Differential Rover', 'gazebo_target': 'gazebo_rover_differential', 'autostart_id': '50000'},
             ]
         
         return aircraft_types
