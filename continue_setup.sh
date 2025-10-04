@@ -12,8 +12,8 @@ if [ -f "sitl_engines/px4/PX4-Autopilot/build/px4_sitl_default/bin/px4" ]; then
 else
     echo "Continuing PX4 installation..."
     
-    # Navigate to PX4 directory
-    cd sitl_engines/px4/PX4-Autopilot
+    # Navigate to PX4 directory (use the symlink)
+    cd px4
     
     # PX4 dependencies should already be installed by main setup script
     echo "Checking if PX4 dependencies are installed..."
@@ -102,8 +102,8 @@ echo "======================================"
 echo "Testing PX4 SITL Build"
 echo "======================================"
 
-# Navigate to PX4 directory for testing
-cd sitl_engines/px4/PX4-Autopilot
+# Navigate to PX4 directory for testing (use the symlink)
+cd px4
 
 # Set environment variables for headless test
 echo "Setting up environment for headless test..."

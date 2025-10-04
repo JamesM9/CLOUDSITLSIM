@@ -15,7 +15,7 @@ if [ ! -d "sitl_engines/px4/PX4-Autopilot" ]; then
     exit 1
 fi
 
-cd sitl_engines/px4/PX4-Autopilot
+cd px4
 
 # Set environment variables for headless operation
 export HEADLESS=1

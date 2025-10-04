@@ -433,8 +433,8 @@ echo "======================================"
 echo "Starting PX4 SITL Instance"
 echo "======================================"
 
-# Navigate to PX4 directory
-cd sitl_engines/px4/PX4-Autopilot
+# Navigate to PX4 directory (use the symlink)
+cd px4
 
 # Set environment variables for headless operation
 echo "Setting up environment for headless PX4 SITL..."
