@@ -185,40 +185,68 @@ class PX4Engine:
         if not aircraft_config:
             raise ValueError(f"Unknown aircraft type: {aircraft_type}")
         
-        # Set environment variables
+        # Set environment variables for headless operation
         env = os.environ.copy()
         env['HEADLESS'] = '1'
         env['PX4_SIM_HOSTNAME'] = 'localhost'
+        env['GAZEBO_MODEL_PATH'] = str(self.px4_path / 'Tools' / 'sitl_gazebo' / 'models')
+        env['GAZEBO_RESOURCE_PATH'] = str(self.px4_path / 'Tools' / 'sitl_gazebo')
+        
+        # Additional Gazebo headless settings
+        env['GAZEBO_IP'] = '127.0.0.1'
+        env['GAZEBO_MASTER_URI'] = 'http://127.0.0.1:11345'
         
         # Use make command to start PX4 SITL with specific model
         gazebo_model = aircraft_config.get('gazebo_model', aircraft_type)
         
-        # Build command using make (this is the correct way for PX4 SITL)
-        cmd = [
-            'make',
-            'px4_sitl',
-            f'gz_{gazebo_model}'
+        # Try different target formats that PX4 might support
+        target_formats = [
+            f'gazebo_{gazebo_model}',
+            f'gz_{gazebo_model}',
+            gazebo_model,
+            'default'  # Fallback to default if specific model not found
         ]
         
-        logger.info(f"Starting PX4 SITL with aircraft: {aircraft_type} (Gazebo model: {gazebo_model})")
-        logger.info(f"Command: {' '.join(cmd)}")
+        process = None
+        last_error = None
         
-        # Start process
-        process = subprocess.Popen(
-            cmd,
-            cwd=str(self.px4_path),
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            preexec_fn=os.setsid
-        )
+        for target in target_formats:
+            cmd = ['make', 'px4_sitl', target]
+            
+            logger.info(f"Trying PX4 SITL target: {target} for aircraft: {aircraft_type}")
+            logger.info(f"Command: {' '.join(cmd)}")
+            
+            try:
+                # Start process
+                process = subprocess.Popen(
+                    cmd,
+                    cwd=str(self.px4_path),
+                    env=env,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    preexec_fn=os.setsid
+                )
+                
+                # Give it a moment to start
+                time.sleep(3)
+                
+                if process.poll() is not None:
+                    stdout, stderr = process.communicate()
+                    error_msg = stderr.decode()
+                    logger.warning(f"Target {target} failed: {error_msg}")
+                    last_error = error_msg
+                    continue
+                else:
+                    logger.info(f"Successfully started PX4 SITL with target: {target}")
+                    break
+                    
+            except Exception as e:
+                logger.warning(f"Exception with target {target}: {e}")
+                last_error = str(e)
+                continue
         
-        # Give it a moment to start
-        time.sleep(3)
-        
-        if process.poll() is not None:
-            stdout, stderr = process.communicate()
-            raise RuntimeError(f"PX4 process failed to start: {stderr.decode()}")
+        if process is None or process.poll() is not None:
+            raise RuntimeError(f"PX4 process failed to start with any target. Last error: {last_error}")
         
         return process
     
